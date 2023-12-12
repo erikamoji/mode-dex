@@ -34,18 +34,23 @@ contract MarginTrading is AccessControl {
     }
 
     function withdrawCollateral(uint256 amount) external {
-        require(collateral[msg.sender] >= amount, "Insufficient collateral");
+        uint256 userCollateral = collateral[msg.sender];
+        require(userCollateral >= amount, "Insufficient collateral");
         require(!positions[msg.sender].isOpen, "Close position before withdrawal");
-        collateral[msg.sender] -= amount;
+
+        unchecked {
+            collateral[msg.sender] = userCollateral - amount;
+        }
         payable(msg.sender).transfer(amount);
         emit CollateralWithdrawn(msg.sender, amount);
     }
 
     function openPosition(uint256 leverage, uint256 entryPrice) external {
-        require(collateral[msg.sender] > 0, "No collateral deposited");
+        uint256 userCollateral = collateral[msg.sender];
+        require(userCollateral > 0, "No collateral deposited");
         require(leverage > 1 && leverage <= 10, "Invalid leverage");
 
-        uint256 positionSize = collateral[msg.sender] * leverage;
+        uint256 positionSize = userCollateral * leverage;
         positions[msg.sender] = TradingPosition(positionSize, leverage, entryPrice, true);
         emit PositionOpened(msg.sender, positionSize, leverage);
     }
