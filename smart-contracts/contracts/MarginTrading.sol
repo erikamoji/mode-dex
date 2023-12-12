@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract MarginTrading {
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
+contract MarginTrading is AccessControl {
+    bytes32 public constant LIQUIDATOR_ROLE = keccak256("LIQUIDATOR_ROLE");
+
     mapping(address => uint256) public collateral;
     mapping(address => TradingPosition) public positions;
 
-    // Define a trading position structure
     struct TradingPosition {
         uint256 amount;
         uint256 leverage;
@@ -19,6 +22,10 @@ contract MarginTrading {
     event PositionOpened(address indexed user, uint256 amount, uint256 leverage);
     event PositionClosed(address indexed user, uint256 amount, int256 profitLoss);
     event LiquidationOccurred(address indexed user, uint256 amount, int256 profitLoss);
+
+    constructor() {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
 
     function depositCollateral() external payable {
         require(msg.value > 0, "No ETH sent");
@@ -60,10 +67,7 @@ contract MarginTrading {
         emit PositionClosed(msg.sender, position.amount, profitLoss);
     }
 
-    function liquidatePosition(address user, uint256 exitPrice) external {
-        // Only an authorized liquidator can call this function
-        // Add logic to authorize liquidator
-
+    function liquidatePosition(address user, uint256 exitPrice) external onlyRole(LIQUIDATOR_ROLE) {
         TradingPosition storage position = positions[user];
         require(position.isOpen, "No open position to liquidate");
 
@@ -72,6 +76,14 @@ contract MarginTrading {
         collateral[user] -= uint256(-profitLoss);  // Assuming profitLoss is negative
 
         emit LiquidationOccurred(user, position.amount, profitLoss);
+    }
+
+    function grantLiquidatorRole(address liquidator) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(LIQUIDATOR_ROLE, liquidator);
+    }
+
+    function revokeLiquidatorRole(address liquidator) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        revokeRole(LIQUIDATOR_ROLE, liquidator);
     }
 
     function calculateProfitLoss(uint256 amount, uint256 leverage, uint256 entryPrice, uint256 exitPrice) private pure returns (int256) {
