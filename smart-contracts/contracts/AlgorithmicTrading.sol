@@ -1,32 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
 contract AlgorithmicTrading {
-    uint256[] public prices;  // Historical prices of an asset
-    uint256 public smaPeriod = 5;  // SMA period
+    uint256[] public prices;  
+    uint256 public smaPeriod = 5;
     uint256 public constant RSI_PERIOD = 14;
     uint256 public constant RSI_OVERBOUGHT = 70;
     uint256 public constant RSI_OVERSOLD = 30;
 
+    AggregatorV3Interface internal priceFeed;
+
     event TradeExecuted(address indexed trader, bool buy, uint256 amount);
 
-    function updatePrice(uint256 newPrice) external {
-        prices.push(newPrice);
+    constructor(address _priceFeed) {
+        priceFeed = AggregatorV3Interface(_priceFeed);
+    }
+
+    // Function to update price from Chainlink Oracle
+    function updatePriceFromOracle() public {
+        (, int256 price, , , ) = priceFeed.latestRoundData();
+        require(price > 0, "Invalid price data");
+        prices.push(uint256(price));
     }
 
     function executeTradeStrategy() external {
         require(prices.length >= smaPeriod, "Not enough data for SMA");
         require(prices.length >= RSI_PERIOD, "Not enough data for RSI");
-        
+
         uint256 sma = calculateSMA();
         uint256 rsi = calculateRSI();
         uint256 currentPrice = prices[prices.length - 1];
 
         if (currentPrice > sma && rsi < RSI_OVERBOUGHT) {
-            // Buy signal
             emit TradeExecuted(msg.sender, true, currentPrice);
         } else if (currentPrice < sma && rsi > RSI_OVERSOLD) {
-            // Sell signal
             emit TradeExecuted(msg.sender, false, currentPrice);
         }
     }
