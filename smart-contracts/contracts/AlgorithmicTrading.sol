@@ -5,9 +5,12 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "abdk-libraries-solidity/ABDKMathQuad.sol"; // Advanced Math Library
 
-contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable {
+contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
+    using ABDKMathQuad for bytes16;
 
     uint256[] public prices;  
     uint256 public smaPeriod = 5;
@@ -50,7 +53,7 @@ contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable {
         prices.push(uint256(price));
     }
 
-    function executeTradeStrategy() external {
+    function executeTradeStrategy() external nonReentrant {
         require(prices.length >= smaPeriod, "Not enough data for SMA");
         require(prices.length >= RSI_PERIOD, "Not enough data for RSI");
 
@@ -68,9 +71,9 @@ contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable {
     function calculateSMA() public view returns (uint256) {
         uint256 sum = 0;
         for (uint256 i = prices.length - smaPeriod; i < prices.length; i++) {
-            sum += prices[i];
+            sum = sum.add(prices[i]);
         }
-        return sum / smaPeriod;
+        return sum.div(smaPeriod);
     }
 
     function calculateRSI() public view returns (uint256) {
@@ -79,9 +82,9 @@ contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable {
 
         for (uint256 i = prices.length - RSI_PERIOD; i < prices.length - 1; i++) {
             if (prices[i] < prices[i + 1]) {
-                gain += prices[i + 1] - prices[i];
+                gain = gain.add(prices[i + 1].sub(prices[i]));
             } else {
-                loss += prices[i] - prices[i + 1];
+                loss = loss.add(prices[i].sub(prices[i + 1]));
             }
         }
 
@@ -89,7 +92,7 @@ contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable {
             return 100;
         }
 
-        uint256 rs = gain / loss;
-        return 100 - (100 / (1 + rs));
+        bytes16 rs = ABDKMathQuad.fromUInt(gain).div(ABDKMathQuad.fromUInt(loss));
+        return ABDKMathQuad.toUInt(ABDKMathQuad.fromUInt(100).sub(ABDKMathQuad.fromUInt(100).div(ABDKMathQuad.fromUInt(1).add(rs))));
     }
 }
