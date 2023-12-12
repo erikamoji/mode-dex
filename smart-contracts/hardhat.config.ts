@@ -1,13 +1,16 @@
 import "@nomiclabs/hardhat-ethers";
+import "dotenv/config";
 
 import { HardhatUserConfig } from "hardhat/config";
+
+const PRIVATE_KEY = process.env.SEPOLIA_PRIVATE_KEY as string
 
 const config: HardhatUserConfig = {
   networks: {
     mode: {
       url: "https://sepolia.mode.network",
       chainId: 919,
-      accounts: ["YOUR_PRIVATE_KEY_HERE"] //BE VERY CAREFUL, DO NOT PUSH THIS TO GITHUB
+      accounts: [PRIVATE_KEY] //BE VERY CAREFUL, DO NOT PUSH THIS TO GITHUB
     }
   },
   solidity: "0.8.0",
