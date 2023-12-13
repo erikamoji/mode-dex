@@ -7,14 +7,23 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/keccak256.sol";
 
 interface IDex {
-    function executeTrade(address trader, uint256 amount, uint256 price, bool isBuyOrder) external;
+    function executeTrade(
+        address trader,
+        uint256 amount,
+        uint256 price,
+        bool isBuyOrder
+    ) external;
 }
 
 contract OrderTypes is Ownable {
     using ECDSA for bytes32;
 
-    enum OrderType { Market, Limit, StopLoss }
-    
+    enum OrderType {
+        Market,
+        Limit,
+        StopLoss
+    }
+
     struct Order {
         address trader;
         uint256 amount;
@@ -29,15 +38,27 @@ contract OrderTypes is Ownable {
         bool revealed;
     }
 
-    uint256 public constant REVEAL_BLOCK_DELAY = 10;  // Number of blocks to wait before revealing
+    uint256 public constant REVEAL_BLOCK_DELAY = 10; // Number of blocks to wait before revealing
     mapping(uint256 => Commit) public commits;
-    Order[] public orders;
+    mapping(uint256 => Order) public orders;
     AggregatorV3Interface public priceFeed;
     IDex public dex;
     uint256 public nextCommitId;
+    uint256 public nextOrderId;
 
-    event CommitPlaced(uint256 indexed commitId, bytes32 hash, uint256 revealBlockNumber);
-    event OrderRevealed(uint256 indexed commitId, uint256 indexed orderId, address indexed trader, OrderType orderType, uint256 amount, uint256 price);
+    event CommitPlaced(
+        uint256 indexed commitId,
+        bytes32 hash,
+        uint256 revealBlockNumber
+    );
+    event OrderRevealed(
+        uint256 indexed commitId,
+        uint256 indexed orderId,
+        address indexed trader,
+        OrderType orderType,
+        uint256 amount,
+        uint256 price
+    );
 
     constructor(address _priceFeed, address _dex) {
         priceFeed = AggregatorV3Interface(_priceFeed);
@@ -54,58 +75,82 @@ contract OrderTypes is Ownable {
         emit CommitPlaced(commitId, hash, block.number + REVEAL_BLOCK_DELAY);
     }
 
-    function revealOrder(uint256 commitId, uint256 amount, uint256 price, OrderType orderType, bytes memory signature) external {
+    function revealOrder(
+        uint256 commitId,
+        uint256 amount,
+        uint256 price,
+        OrderType orderType,
+        bytes memory signature
+    ) external {
         Commit storage commit = commits[commitId];
-        require(block.number >= commit.revealBlockNumber, "Reveal block number not yet reached");
+        require(
+            block.number >= commit.revealBlockNumber,
+            "Reveal block number not yet reached"
+        );
         require(!commit.revealed, "Order already revealed");
-        
-        bytes32 hash = keccak256(abi.encodePacked(msg.sender, amount, price, orderType));
-        require(hash.toEthSignedMessageHash().recover(signature) == msg.sender, "Invalid signature");
+
+        bytes32 hash = keccak256(
+            abi.encodePacked(msg.sender, amount, price, orderType)
+        );
+        require(
+            hash.toEthSignedMessageHash().recover(signature) == msg.sender,
+            "Invalid signature"
+        );
 
         require(hash == commit.hash, "Hash mismatch");
+        require(amount > 0, "Invalid order amount");
+        require(price > 0, "Invalid order price");
         commit.revealed = true;
-        
-        uint256 orderId = orders.length;
-        orders.push(Order(msg.sender, amount, price, orderType, true));
-        emit OrderRevealed(commitId, orderId, msg.sender, orderType, amount, price);
+
+        uint256 orderId = nextOrderId++;
+        orders[orderId] = Order(msg.sender, amount, price, orderType, true);
+        emit OrderRevealed(
+            commitId,
+            orderId,
+            msg.sender,
+            orderType,
+            amount,
+            price
+        );
     }
 
     function checkAndExecuteOrders() external onlyOwner {
         uint256 currentPrice = getLatestPrice();
-        for (uint i = 0; i < orders.length; i++) {
-            if (orders[i].isActive && isExecutable(orders[i], currentPrice)) {
-                executeOrder(i, orders[i].orderType == OrderType.Limit);
+        for (uint i = 0; i < nextOrderId; i++) {
+            Order storage order = orders[i];
+            if (order.isActive && isExecutable(order, currentPrice)) {
+                executeOrder(i, order.orderType == OrderType.Limit);
             }
         }
     }
 
     function executeOrder(uint256 orderId, bool isBuyOrder) internal {
-        // Interact with DEX contract to execute the trade
-        dex.executeTrade(orders[orderId].trader, orders[orderId].amount, orders[orderId].price, isBuyOrder);
-
-        emit OrderExecuted(orderId, orders[orderId].amount, orders[orderId].price);
-        orders[orderId].isActive = false;
+        Order storage order = orders[orderId];
+        dex.executeTrade(order.trader, order.amount, order.price, isBuyOrder);
+        order.isActive = false;
     }
 
-    function isExecutable(Order memory order, uint256 currentPrice) internal pure returns (bool) {
+    function isExecutable(
+        Order memory order,
+        uint256 currentPrice
+    ) internal pure returns (bool) {
         if (order.orderType == OrderType.Market) {
             return true;
-        } else if (order.orderType == OrderType.Limit && (order.price >= currentPrice)) {
+        } else if (
+            order.orderType == OrderType.Limit && (order.price >= currentPrice)
+        ) {
             return true;
-        } else if (order.orderType == OrderType.StopLoss && (order.price <= currentPrice)) {
+        } else if (
+            order.orderType == OrderType.StopLoss &&
+            (order.price <= currentPrice)
+        ) {
             return true;
         }
         return false;
     }
 
     function getLatestPrice() public view returns (uint256) {
-        (
-            , 
-            int256 price,
-            ,
-            ,
-            
-        ) = priceFeed.latestRoundData();
+        (, int256 price, , , ) = priceFeed.latestRoundData();
         return uint256(price);
     }
 
