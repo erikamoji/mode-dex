@@ -1,4 +1,6 @@
 import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-waffle";
 import "dotenv/config";
 
 import { HardhatUserConfig } from "hardhat/config";
