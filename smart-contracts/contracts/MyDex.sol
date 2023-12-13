@@ -43,7 +43,8 @@ contract MyDex is Ownable {
         orderTypes = OrderTypes(_orderTypesAddress);
     }
 
-    function registerWithSFS(address _sfsContractAddress) external {
+    // Modified function with access control
+    function registerWithSFS(address _sfsContractAddress) external onlyOwner {
         SFSContract sfsContract = SFSContract(_sfsContractAddress);
         sfsTokenId = sfsContract.register(address(this));
         sfsContractAddress = _sfsContractAddress;
