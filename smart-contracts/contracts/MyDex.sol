@@ -13,20 +13,29 @@ contract MyDex {
     MarginTrading public marginTrading;
     AlgorithmicTrading public algorithmicTrading;
     OrderTypes public orderTypes;
+    address public sfsContractAddress;
+    uint256 public sfsTokenId;
 
-    constructor() {
-        marginTrading = new MarginTrading();
-        algorithmicTrading = new AlgorithmicTrading();
-        orderTypes = new OrderTypes();
+    event RegisteredWithSFS(address indexed dex, uint256 tokenId);
+
+    constructor(address _marginTradingAddress, address _algorithmicTradingAddress, address _orderTypesAddress) {
+        marginTrading = MarginTrading(_marginTradingAddress);
+        algorithmicTrading = AlgorithmicTrading(_algorithmicTradingAddress);
+        orderTypes = OrderTypes(_orderTypesAddress);
     }
 
-    function registerWithSFS(address sfsContract
-
-Address) external {
-        SFSContract sfsContract = SFSContract(sfsContractAddress);
-        uint256 tokenId = sfsContract.register(address(this));
-        // Additional logic to handle the registration
+    function registerWithSFS(address _sfsContractAddress) external {
+        SFSContract sfsContract = SFSContract(_sfsContractAddress);
+        sfsTokenId = sfsContract.register(address(this));
+        sfsContractAddress = _sfsContractAddress;
+        emit RegisteredWithSFS(address(this), sfsTokenId);
     }
 
-    // Additional DEX functionalities here
+    // Function to handle trade execution
+    function executeTrade(address trader, uint256 amount, uint256 price, bool isBuyOrder) external {
+        // Trade execution logic goes here
+        // This could involve interacting with liquidity pools and executing trades based on the provided parameters
+    }
+
+    // Additional DEX functionalities can be added here
 }
