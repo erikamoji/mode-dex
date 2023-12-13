@@ -4,19 +4,14 @@ pragma solidity ^0.8.0;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol"; // Advanced Math Library
 
-contract AlgorithmicTrading is
-    KeeperCompatibleInterface,
-    Ownable,
-    ReentrancyGuard
-{
-    using SafeMath for uint256;
+contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable, ReentrancyGuard {
     using ABDKMathQuad for bytes16;
 
     uint256[] public prices;
+    uint256 public constant MAX_PRICE_ENTRIES = 50; // Limit the number of prices to store
     uint256 public smaPeriod = 5;
     uint256 public constant RSI_PERIOD = 14;
     uint256 public constant RSI_OVERBOUGHT = 70;
@@ -37,9 +32,7 @@ contract AlgorithmicTrading is
         lastTimeStamp = block.timestamp;
     }
 
-    function checkUpkeep(
-        bytes calldata
-    ) external override returns (bool upkeepNeeded, bytes memory) {
+    function checkUpkeep(bytes calldata) external override returns (bool upkeepNeeded, bytes memory) {
         upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
     }
 
@@ -56,7 +49,13 @@ contract AlgorithmicTrading is
         require(price > 0, "Invalid price data");
         require(timeStamp > lastUpdate, "No new data");
         lastUpdate = timeStamp;
-        prices.push(uint256(price));
+
+        // Update prices array in a circular manner
+        if (prices.length < MAX_PRICE_ENTRIES) {
+            prices.push(uint256(price));
+        } else {
+            prices[lastUpdate % MAX_PRICE_ENTRIES] = uint256(price);
+        }
     }
 
     function executeTradeStrategy() external nonReentrant {
@@ -78,28 +77,22 @@ contract AlgorithmicTrading is
         require(prices.length >= smaPeriod, "Insufficient data for SMA");
 
         uint256 sum = 0;
-        uint256 startIndex = prices.length > smaPeriod
-            ? prices.length - smaPeriod
-            : 0;
+        uint256 startIndex = prices.length > smaPeriod ? prices.length - smaPeriod : 0;
         for (uint256 i = startIndex; i < prices.length; i++) {
-            sum = sum.add(prices[i]);
+            sum += prices[i];
         }
-        return sum.div(smaPeriod);
+        return sum / smaPeriod;
     }
 
     function calculateRSI() public view returns (uint256) {
         uint256 gain = 0;
         uint256 loss = 0;
 
-        for (
-            uint256 i = prices.length - RSI_PERIOD;
-            i < prices.length - 1;
-            i++
-        ) {
+        for (uint256 i = prices.length - RSI_PERIOD; i < prices.length - 1; i++) {
             if (prices[i] < prices[i + 1]) {
-                gain = gain.add(prices[i + 1].sub(prices[i]));
+                gain += (prices[i + 1] - prices[i]);
             } else {
-                loss = loss.add(prices[i].sub(prices[i + 1]));
+                loss += (prices[i] - prices[i + 1]);
             }
         }
 
@@ -107,16 +100,7 @@ contract AlgorithmicTrading is
             return 100;
         }
 
-        bytes16 rs = ABDKMathQuad.fromUInt(gain).div(
-            ABDKMathQuad.fromUInt(loss)
-        );
-        return
-            ABDKMathQuad.toUInt(
-                ABDKMathQuad.fromUInt(100).sub(
-                    ABDKMathQuad.fromUInt(100).div(
-                        ABDKMathQuad.fromUInt(1).add(rs)
-                    )
-                )
-            );
+        bytes16 rs = ABDKMathQuad.fromUInt(gain).div(ABDKMathQuad.fromUInt(loss));
+        return ABDKMathQuad.toUInt(ABDKMathQuad.fromUInt(100).sub(ABDKMathQuad.fromUInt(100).div(ABDKMathQuad.fromUInt(1).add(rs))));
     }
 }
