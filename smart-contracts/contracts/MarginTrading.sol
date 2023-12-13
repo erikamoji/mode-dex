@@ -68,6 +68,7 @@ contract MarginTrading is AccessControl, ReentrancyGuard {
         uint256 userCollateral = collateral[msg.sender];
         require(userCollateral > 0, "No collateral deposited");
         require(leverage > 1 && leverage <= 10, "Invalid leverage");
+        require(entryPrice > 0, "Invalid entry price");
 
         uint256 positionSize = userCollateral * leverage;
         positions[msg.sender] = TradingPosition(
@@ -82,6 +83,7 @@ contract MarginTrading is AccessControl, ReentrancyGuard {
     function closePosition(uint256 exitPrice) external nonReentrant {
         TradingPosition storage position = positions[msg.sender];
         require(position.isOpen, "No open position");
+        require(exitPrice > 0, "Invalid exit price");
 
         int256 profitLoss = calculateProfitLoss(
             position.amount,
@@ -107,6 +109,10 @@ contract MarginTrading is AccessControl, ReentrancyGuard {
     ) external onlyRole(LIQUIDATOR_ROLE) nonReentrant {
         TradingPosition storage position = positions[user];
         require(position.isOpen, "No open position to liquidate");
+        require(exitPrice > 0, "Invalid exit price");
+
+        // Additional checks can be added here to validate conditions for liquidation
+        // ...
 
         int256 profitLoss = calculateProfitLoss(
             position.amount,
@@ -138,6 +144,9 @@ contract MarginTrading is AccessControl, ReentrancyGuard {
         uint256 entryPrice,
         uint256 exitPrice
     ) private pure returns (int256) {
+        require(entryPrice > 0, "Entry price cannot be zero");
+        require(exitPrice > 0, "Exit price cannot be zero");
+
         int256 valueChange = int256(exitPrice) - int256(entryPrice);
         return
             (int256(leverage) * valueChange * int256(amount)) /
