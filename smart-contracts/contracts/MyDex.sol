@@ -67,12 +67,14 @@ contract MyDex is Ownable {
     ) external {
         require(token != address(0), "Invalid token address");
         require(amount > 0, "Trade amount must be greater than zero");
+
+        ILiquidityPool _liquidityPool = liquidityPool; // Cached in memory
         require(
-            liquidityPool != ILiquidityPool(address(0)),
+            _liquidityPool != ILiquidityPool(address(0)),
             "Liquidity pool not set"
         );
 
-        uint256 marketPrice = liquidityPool.getCurrentPrice(token);
+        uint256 marketPrice = _liquidityPool.getCurrentPrice(token);
 
         if (isBuyOrder) {
             require(marketPrice <= price, "Market price is too high");

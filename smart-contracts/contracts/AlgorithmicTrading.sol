@@ -8,11 +8,15 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol"; // Advanced Math Library
 
-contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable, ReentrancyGuard {
+contract AlgorithmicTrading is
+    KeeperCompatibleInterface,
+    Ownable,
+    ReentrancyGuard
+{
     using SafeMath for uint256;
     using ABDKMathQuad for bytes16;
 
-    uint256[] public prices;  
+    uint256[] public prices;
     uint256 public smaPeriod = 5;
     uint256 public constant RSI_PERIOD = 14;
     uint256 public constant RSI_OVERBOUGHT = 70;
@@ -33,12 +37,14 @@ contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable, ReentrancyGua
         lastTimeStamp = block.timestamp;
     }
 
-    function checkUpkeep(bytes calldata) external override returns (bool upkeepNeeded, bytes memory) {
+    function checkUpkeep(
+        bytes calldata
+    ) external override returns (bool upkeepNeeded, bytes memory) {
         upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
     }
 
     function performUpkeep(bytes calldata) external override {
-        if ((block.timestamp - lastTimeStamp) > interval ) {
+        if ((block.timestamp - lastTimeStamp) > interval) {
             lastTimeStamp = block.timestamp;
             updatePriceFromOracle();
         }
@@ -69,8 +75,13 @@ contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable, ReentrancyGua
     }
 
     function calculateSMA() public view returns (uint256) {
+        require(prices.length >= smaPeriod, "Insufficient data for SMA");
+
         uint256 sum = 0;
-        for (uint256 i = prices.length - smaPeriod; i < prices.length; i++) {
+        uint256 startIndex = prices.length > smaPeriod
+            ? prices.length - smaPeriod
+            : 0;
+        for (uint256 i = startIndex; i < prices.length; i++) {
             sum = sum.add(prices[i]);
         }
         return sum.div(smaPeriod);
@@ -80,7 +91,11 @@ contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable, ReentrancyGua
         uint256 gain = 0;
         uint256 loss = 0;
 
-        for (uint256 i = prices.length - RSI_PERIOD; i < prices.length - 1; i++) {
+        for (
+            uint256 i = prices.length - RSI_PERIOD;
+            i < prices.length - 1;
+            i++
+        ) {
             if (prices[i] < prices[i + 1]) {
                 gain = gain.add(prices[i + 1].sub(prices[i]));
             } else {
@@ -92,7 +107,16 @@ contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable, ReentrancyGua
             return 100;
         }
 
-        bytes16 rs = ABDKMathQuad.fromUInt(gain).div(ABDKMathQuad.fromUInt(loss));
-        return ABDKMathQuad.toUInt(ABDKMathQuad.fromUInt(100).sub(ABDKMathQuad.fromUInt(100).div(ABDKMathQuad.fromUInt(1).add(rs))));
+        bytes16 rs = ABDKMathQuad.fromUInt(gain).div(
+            ABDKMathQuad.fromUInt(loss)
+        );
+        return
+            ABDKMathQuad.toUInt(
+                ABDKMathQuad.fromUInt(100).sub(
+                    ABDKMathQuad.fromUInt(100).div(
+                        ABDKMathQuad.fromUInt(1).add(rs)
+                    )
+                )
+            );
     }
 }
