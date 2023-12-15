@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "./MarginTrading.sol";
 import "./AlgorithmicTrading.sol";
@@ -31,13 +31,20 @@ contract MyDex is Ownable {
     uint256 public sfsTokenId;
     ILiquidityPool public liquidityPool;
 
+    event TradeExecuted(
+        address indexed trader,
+        uint256 amount,
+        uint256 marketPrice,
+        bool isBuyOrder
+    );
+
     event RegisteredWithSFS(address indexed dex, uint256 tokenId);
 
     constructor(
         address _marginTradingAddress,
         address _algorithmicTradingAddress,
         address _orderTypesAddress
-    ) {
+    ) Ownable(msg.sender) {
         marginTrading = MarginTrading(_marginTradingAddress);
         algorithmicTrading = AlgorithmicTrading(_algorithmicTradingAddress);
         orderTypes = OrderTypes(_orderTypesAddress);

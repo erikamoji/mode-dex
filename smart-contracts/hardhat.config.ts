@@ -15,7 +15,7 @@ const config: HardhatUserConfig = {
       accounts: [PRIVATE_KEY] //BE VERY CAREFUL, DO NOT PUSH THIS TO GITHUB
     }
   },
-  solidity: "0.8.0",
+  solidity: "0.8.20",
 };
 
 export default config;

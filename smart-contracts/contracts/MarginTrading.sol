@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract MarginTrading is AccessControl, ReentrancyGuard {
     bytes32 public constant LIQUIDATOR_ROLE = keccak256("LIQUIDATOR_ROLE");
@@ -37,7 +37,8 @@ contract MarginTrading is AccessControl, ReentrancyGuard {
     );
 
     constructor() {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        // Assign the deployer as the default admin
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     function depositCollateral() external payable nonReentrant {

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
+import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol"; // Advanced Math Library
 
-contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable, ReentrancyGuard {
+contract AlgorithmicTrading is AutomationCompatibleInterface, Ownable, ReentrancyGuard {
     using ABDKMathQuad for bytes16;
 
     uint256[] public prices;
@@ -26,7 +26,7 @@ contract AlgorithmicTrading is KeeperCompatibleInterface, Ownable, ReentrancyGua
 
     event TradeExecuted(address indexed trader, bool buy, uint256 amount);
 
-    constructor(address _priceFeed, uint256 _updateInterval) {
+    constructor(address _priceFeed, uint256 _updateInterval) Ownable(msg.sender) {
         priceFeed = AggregatorV3Interface(_priceFeed);
         interval = _updateInterval;
         lastTimeStamp = block.timestamp;
