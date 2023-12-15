@@ -7,7 +7,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol"; // Advanced Math Library
 
-contract AlgorithmicTrading is AutomationCompatibleInterface, Ownable, ReentrancyGuard {
+contract AlgorithmicTrading is
+    AutomationCompatibleInterface,
+    Ownable,
+    ReentrancyGuard
+{
     using ABDKMathQuad for bytes16;
 
     uint256[] public prices;
@@ -26,14 +30,20 @@ contract AlgorithmicTrading is AutomationCompatibleInterface, Ownable, Reentranc
 
     event TradeExecuted(address indexed trader, bool buy, uint256 amount);
 
-    constructor(address _priceFeed, uint256 _updateInterval) Ownable(msg.sender) {
+    constructor(
+        address _priceFeed,
+        uint256 _updateInterval
+    ) Ownable(msg.sender) {
         priceFeed = AggregatorV3Interface(_priceFeed);
         interval = _updateInterval;
         lastTimeStamp = block.timestamp;
     }
 
-    function checkUpkeep(bytes calldata) external override returns (bool upkeepNeeded, bytes memory) {
+    function checkUpkeep(
+        bytes calldata
+    ) external view override returns (bool upkeepNeeded, bytes memory) {
         upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
+        return (upkeepNeeded, "");
     }
 
     function performUpkeep(bytes calldata) external override {
@@ -77,7 +87,9 @@ contract AlgorithmicTrading is AutomationCompatibleInterface, Ownable, Reentranc
         require(prices.length >= smaPeriod, "Insufficient data for SMA");
 
         uint256 sum = 0;
-        uint256 startIndex = prices.length > smaPeriod ? prices.length - smaPeriod : 0;
+        uint256 startIndex = prices.length > smaPeriod
+            ? prices.length - smaPeriod
+            : 0;
         for (uint256 i = startIndex; i < prices.length; i++) {
             sum += prices[i];
         }
@@ -88,7 +100,11 @@ contract AlgorithmicTrading is AutomationCompatibleInterface, Ownable, Reentranc
         uint256 gain = 0;
         uint256 loss = 0;
 
-        for (uint256 i = prices.length - RSI_PERIOD; i < prices.length - 1; i++) {
+        for (
+            uint256 i = prices.length - RSI_PERIOD;
+            i < prices.length - 1;
+            i++
+        ) {
             if (prices[i] < prices[i + 1]) {
                 gain += (prices[i + 1] - prices[i]);
             } else {
@@ -100,7 +116,16 @@ contract AlgorithmicTrading is AutomationCompatibleInterface, Ownable, Reentranc
             return 100;
         }
 
-        bytes16 rs = ABDKMathQuad.fromUInt(gain).div(ABDKMathQuad.fromUInt(loss));
-        return ABDKMathQuad.toUInt(ABDKMathQuad.fromUInt(100).sub(ABDKMathQuad.fromUInt(100).div(ABDKMathQuad.fromUInt(1).add(rs))));
+        bytes16 rs = ABDKMathQuad.fromUInt(gain).div(
+            ABDKMathQuad.fromUInt(loss)
+        );
+        return
+            ABDKMathQuad.toUInt(
+                ABDKMathQuad.fromUInt(100).sub(
+                    ABDKMathQuad.fromUInt(100).div(
+                        ABDKMathQuad.fromUInt(1).add(rs)
+                    )
+                )
+            );
     }
 }

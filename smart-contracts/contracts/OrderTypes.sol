@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 interface IDex {
     function executeTrade(
@@ -88,10 +89,13 @@ contract OrderTypes is Ownable {
         );
         require(!commit.revealed, "Order already revealed");
 
+        bytes32 hash = keccak256(
+            abi.encodePacked(msg.sender, amount, price, orderType)
+        );
+        bytes32 ethSignedHash = MessageHashUtils.toEthSignedMessageHash(hash);
+
         require(
-            keccak256(abi.encodePacked(msg.sender, amount, price, orderType))
-                .toEthSignedMessageHash()
-                .recover(signature) == msg.sender,
+            ECDSA.recover(ethSignedHash, signature) == msg.sender,
             "Invalid signature"
         );
 
