@@ -95,6 +95,8 @@ The DEX utilizes the Sequencer Fee Sharing (SFS) system to earn a portion of tra
 ### Fee Distribution
 - **Distributing to Users**: The collected fees can be used to reward liquidity providers or reduce trading costs for users, creating a positive incentive loop and attracting more users to the platform.
 
+![Architecture](https://github.com/erikamoji/mode-dex/blob/main/arch.png)
+
 ## Development and Deployment
 
 ### Prerequisites
