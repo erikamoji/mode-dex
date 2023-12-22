@@ -6,6 +6,15 @@ MODE DEFI DEX is a highly sophisticated decentralized exchange platform optimize
 
 ## Smart Contracts
 
+### Deployed Addresses:
+
+- MarginTrading deployed to: 0xEC0357990512b3429eB89e119C0CF2B0c6f248cD
+- AlgorithmicTrading deployed to: 0x8aeDA26FaC3DB234Aa9F1C29439Af5f551F8709A
+- MyDex deployed to: 0x86351aABbc803B94623188b7e83413ee81f1dc3e
+- OrderTypes deployed to: 0x7A68317754A34923784c1f202b14767d3c51ADd0
+- MyDex registered with SFS at 0xBBd707815a7F7eb6897C7686274AFabd7B579Ff6
+- Liquidity Pool set for MyDex at 0x0000000000000000000000000000000000000000
+
 ### 1. **AlgorithmicTrading.sol**
 
 #### Description:

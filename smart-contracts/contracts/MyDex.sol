@@ -65,6 +65,10 @@ contract MyDex is Ownable {
         liquidityPool = ILiquidityPool(_liquidityPoolAddress);
     }
 
+    function setOrderTypesAddress(address _orderTypesAddress) public onlyOwner {
+    orderTypes = OrderTypes(_orderTypesAddress);
+}
+
     function executeTrade(
         address trader,
         address token,
