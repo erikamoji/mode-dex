@@ -4,6 +4,8 @@
 
 MODE DEFI DEX is a highly sophisticated decentralized exchange platform optimized for Mode's Layer 2 scalability solution. It offers advanced trading functionalities, including margin trading, algorithmic trading strategies, and stop-loss orders. By integrating with Mode's Sequencer Fee Sharing (SFS), it incentivizes users and liquidity providers with a portion of the transaction fees. This document provides an extensive overview and guide to the smart contracts making up MODE DEFI DEX, detailing its architecture, functionalities, and usage.
 
+![Architecture](https://github.com/erikamoji/mode-dex/blob/main/arch.png)
+
 ## Smart Contracts
 
 ### Deployed Addresses:
@@ -94,8 +96,6 @@ The DEX utilizes the Sequencer Fee Sharing (SFS) system to earn a portion of tra
 
 ### Fee Distribution
 - **Distributing to Users**: The collected fees can be used to reward liquidity providers or reduce trading costs for users, creating a positive incentive loop and attracting more users to the platform.
-
-![Architecture](https://github.com/erikamoji/mode-dex/blob/main/arch.png)
 
 ## Development and Deployment
 
